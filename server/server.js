@@ -28,6 +28,18 @@ app.post('/todos',(req,res)=>{
         res.status(400).send(err) //return (respond) by sending the error
     })
 })
+
+
+//GET
+app.get('/todos',(req,res)=>{
+    Todo.find().then((todos)=>{
+        res.send({todos})
+    },(err)=>{
+        res.status(400).send(err)
+    })
+})
+
+
 app.listen (3000,()=>{
     console.log ('Connect on port: 3000')
 })
