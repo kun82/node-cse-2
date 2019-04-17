@@ -34,7 +34,7 @@ MongoClient.connect('mongodb://localhost:27017/TodoApp',(err,client)=>{
     //collecition method
     db.collection('Users').insertOne({
         name:'SK',
-        age: '30',
+        age: 30,
         location:'SGNTU'
     },(err,result)=>{
         if(err){
