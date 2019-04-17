@@ -18,19 +18,18 @@ app.post('/todos',(req,res)=>{
     console.log(req.body)
     var todo = new Todo({
         text: req.body.text, //access the req.body.text property
-        completed:req.body.completed,
-        completedAt:req.body.completedAt
-
+        //completed:req.body.completed,
+        //completedAt:req.body.completedAt
     })
     //save into database
     todo.save().then((result)=>{
         res.send(result) //return(respond) by sending the result
     },(err)=>{
-        res.send(err) //return (respond) by sending the error
+        res.status(400).send(err) //return (respond) by sending the error
     })
-
 })
-
 app.listen (3000,()=>{
     console.log ('Connect on port: 3000')
 })
+
+module.exports={app}
