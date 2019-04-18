@@ -1,8 +1,8 @@
 var express = require('express')
-var {ObjectID} = require('mongodb')
-
 //bodyParser - take JSON convert into object 
 var bodyParser = require('body-parser')  
+var {ObjectID} = require('mongodb')
+
 
 var {mongoose} = require ('./db/mongoose')
 var {Todo}= require ('./models/todo')
@@ -50,13 +50,14 @@ app.get('/todos/:id',(req,res)=>{
     if(!ObjectID.isValid(id)){
         return res.status(404).send()
     }
+    //5cb71da418e8ee1898965037
     Todo.findById(id).then((todo)=>{
         if(!todo){// if no match
             return res.status(404).send()
-        }// if success, send respond object propety{}
-        res.send({todo}) 
+        }
+        res.send({todo:todo}) // if success, send respond object propety{}
     }).catch((err)=>{
-
+        return res.status(400).send()
     })
 })
 
