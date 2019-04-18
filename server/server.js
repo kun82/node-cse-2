@@ -52,7 +52,7 @@ app.get('/todos/:id',(req,res)=>{
     }
     Todo.findById(id).then((todo)=>{
         if(!todo){// if no match
-            return res.status(400).send()
+            return res.status(404).send()
         }// if success, send respond object propety{}
         res.send({todo}) 
     }).catch((err)=>{
