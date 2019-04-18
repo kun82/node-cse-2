@@ -1,4 +1,5 @@
 var express = require('express')
+var {ObjectID} = require('mongodb')
 
 //bodyParser - take JSON convert into object 
 var bodyParser = require('body-parser')  
@@ -6,6 +7,7 @@ var bodyParser = require('body-parser')
 var {mongoose} = require ('./db/mongoose')
 var {Todo}= require ('./models/todo')
 var {User}= require ('./models/user')
+
 
 var app = express()
 //For Heroku 
@@ -41,6 +43,22 @@ app.get('/todos',(req,res)=>{
     })
 })
 
+//GET /TODOS/id parameters
+app.get('/todos/:id',(req,res)=>{
+    var id = req.params.id
+   
+    if(!ObjectID.isValid(id)){
+        return res.status(404).send()
+    }
+    Todo.findById(id).then((todo)=>{
+        if(!todo){// if no match
+            return res.status(400).send()
+        }// if success, send respond object propety{}
+        res.send({todo}) 
+    }).catch((err)=>{
+
+    })
+})
 
 app.listen (port,()=>{
     console.log (`Connect on port: ${port}`)
