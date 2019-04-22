@@ -61,6 +61,25 @@ app.get('/todos/:id',(req,res)=>{
     })
 })
 
+//DELETE /TODOS/id parameters
+app.delete('/todos/:id',(req,res)=>{
+    //get the ID
+    var id = req.params.id
+    //vadlidate the ID, if not valid return 404
+    if(!ObjectID.isValid(id)){
+        return res.status(404).send()
+    }
+    //remove todo by id 
+    Todo.findByIdAndRemove(id).then((todo)=>{
+        if(!todo){//if no todo send 404
+            return res.status(404).send()
+        } //if avaliable send doc back 200 
+        res.send(todo);
+    }).catch((err)=>{  //error 400 with empty body
+         res.status(400).send(err)
+    })
+})
+
 app.listen (port,()=>{
     console.log (`Connect on port: ${port}`)
 })
