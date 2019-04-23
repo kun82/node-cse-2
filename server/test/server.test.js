@@ -10,7 +10,10 @@ const todos = [{
     text:'First test todo'
 },{
     _id: new ObjectID(),
-    text:'Second test todo'
+    text:'Second test todo',
+    completed: true,
+    completedAt: 333
+
 }]
 
 beforeEach((done)=>{
@@ -104,7 +107,6 @@ describe("GET /todos/:id", ()=>{
 })
 
 //testing delete
-
 describe ('DELETE /todos:ids',()=>{
      it('should remove a todo by ID',(done)=>{     
          var hexID = todos[1]._id.toHexString()
@@ -129,7 +131,7 @@ describe ('DELETE /todos:ids',()=>{
      it('should return 404 if todo not found',(done)=>{    
         var hexID = new ObjectID().toHexString() //convert Object id type to string
         request(app)
-        .get(`/todos/:${hexID}`) 
+        .get(`/todos/${hexID}`) 
         .expect(404)
         .end(done)
 
@@ -140,6 +142,45 @@ describe ('DELETE /todos:ids',()=>{
         .get(`/todos/123abc`)
         .expect(404)
         .end(done)
-        
     }) 
+})
+
+describe('PATCH /todos/:id',()=>{
+    it('should update the todo',(done)=>{
+        var hexID = todos[0]._id.toHexString()//grab id of first item
+        var text = "updated via test"
+        request(app)
+        .patch(`/todos/${hexID}`) 
+        .send({
+            completed : true,
+            text: text
+            })//update text and set completed to true
+        .expect(200)  // expect no error
+        .expect((res)=>{
+        //(text is changed updated & completed is true, completedAt is a (tobe) number). 
+            expect(res.body.todo.text).toBe(text)
+            expect(res.body.todo.completed).toBe(true)
+            expect(typeof res.body.todo.completedAt).toBe('number')
+        })
+        .end(done)
+
+    })
+    it('should clear completedAt when todo is not completed (false)',(done)=>{
+        var hexID = todos[1]._id.toHexString()//grab id of 2nd item
+        var text = "updated via test for second item"
+        request(app)
+        .patch(`/todos/${hexID}`) 
+        .send({//update text and set completed to true
+            completed : false,
+            text: text
+            })
+        .expect(200)  // expect no error
+        .expect((res)=>{
+            //(text is changed updated & completed is true, completedAt is null - toNotExist=tobefalsy()
+                expect(res.body.todo.text).toBe(text)
+                expect(res.body.todo.completed).toBe(false)
+                expect(res.body.todo.completedAt).toBeFalsy()
+            })
+        .end(done)
+    })
 })
