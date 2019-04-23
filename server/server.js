@@ -74,7 +74,7 @@ app.delete('/todos/:id',(req,res)=>{
         if(!todo){//if no todo send 404
             return res.status(404).send()
         } //if avaliable send doc back 200 
-        res.send(todo);
+        res.send({todo});
     }).catch((err)=>{  //error 400 with empty body
          res.status(400).send(err)
     })

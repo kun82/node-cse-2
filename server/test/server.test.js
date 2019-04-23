@@ -102,3 +102,44 @@ describe("GET /todos/:id", ()=>{
 
     })
 })
+
+//testing delete
+
+describe ('DELETE /todos:ids',()=>{
+     it('should remove a todo by ID',(done)=>{     
+         var hexID = todos[1]._id.toHexString()
+         request(app)
+         .delete(`/todos/${hexID}`) //delete http request
+         .expect(200)
+         .expect((res)=>{
+             expect(res.body.todo._id).toBe(hexID)
+         })
+         .end((err,res)=>{
+             if(err){
+                 return done(err)
+             }
+        //query database findbyID  & expect(null).toNotExist()
+        Todo.findById(hexID).then((todo)=>{
+            expect(todo).toBeNull();
+            done();
+        }).catch((err)=>done(err))
+        })
+     })
+
+     it('should return 404 if todo not found',(done)=>{    
+        var hexID = new ObjectID().toHexString() //convert Object id type to string
+        request(app)
+        .get(`/todos/:${hexID}`) 
+        .expect(404)
+        .end(done)
+
+     }) 
+
+     it('should return 404 if object ID Not Valid',(done)=>{    
+        request(app)
+        .get(`/todos/123abc`)
+        .expect(404)
+        .end(done)
+        
+    }) 
+})
