@@ -1,8 +1,8 @@
-var express = require('express')
+const _ =require('lodash')
+const express = require('express')
 //bodyParser - take JSON convert into object 
-var bodyParser = require('body-parser')  
-var {ObjectID} = require('mongodb')
-
+const bodyParser = require('body-parser')  
+const {ObjectID} = require('mongodb')
 
 var {mongoose} = require ('./db/mongoose')
 var {Todo}= require ('./models/todo')
@@ -79,6 +79,35 @@ app.delete('/todos/:id',(req,res)=>{
          res.status(400).send(err)
     })
 })
+
+//PATCH
+app.patch('/todos/:id',(req,res)=>{
+    var id = req.params.id
+    //pull off the existing property "text" & "completed" for editing
+    var body = _.pick(req.body,['text','completed'])  
+        
+    //vadlidate the ID property, if not valid return 404
+        if(!ObjectID.isValid(id)){
+            return res.status(404).send()
+        }
+    //vadlidate the completed property, if it a boolean and valid
+        if(_.isBoolean(body.completed) && body.completed){
+            body.completedAt= new Date().getTime() // get timestamp for js
+        }else{ //set the following
+            body.completed = false
+            body.completedAt = null
+        }
+        //  set to body, return orginal to true
+        Todo.findByIdAndUpdate(id,{$set:body},{new: true}).then((todo)=>{
+                if(!todo){
+                    return res.status(404).send()
+                }
+                res.send({todo:todo}) //respond todo parameter
+            }).catch((err)=>{
+                res.status(400).send()
+            })
+})
+
 
 app.listen (port,()=>{
     console.log (`Connect on port: ${port}`)
