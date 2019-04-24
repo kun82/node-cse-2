@@ -2,6 +2,7 @@ const mongoose=require('mongoose')
 const validator = require('validator')
 const jwt = require('jsonwebtoken')
 const _ =require ('lodash')
+const bcrypt = require ('bcryptjs')
 
 //schema stored all the property
 var UserSchema = new mongoose.Schema({
@@ -80,6 +81,24 @@ UserSchema.statics.findByToken = function(token){
         'tokens.access':'auth'
     })
 }
+
+//before 'save' to DB
+UserSchema.pre('save', function(next){
+    var user = this
+    if (user.isModified('password')){// if password is modified
+        // generate salt 
+        bcrypt.genSalt(10,(err,salt)=>{
+            bcrypt.hash(user.password, salt,(err,hash)=>{
+                user.password = hash // update password with hashed
+                next()
+            })
+        })
+    }else { // if password NOT modified
+        next()
+    }
+
+    
+})
 
 var User = mongoose.model('User',UserSchema)
 
