@@ -3,6 +3,7 @@ const validator = require('validator')
 const jwt = require('jsonwebtoken')
 const _ =require ('lodash')
 
+//schema stored all the property
 var UserSchema = new mongoose.Schema({
 //define object property/type
 //Object Email
@@ -37,27 +38,47 @@ var UserSchema = new mongoose.Schema({
     }]
 })
 
+//CREATING METHODS
+// methods determine what is send back to client
 UserSchema.methods.toJSON = function(){
     var user = this
-    var userObject = user.toObject()
-    
-    //return id and email
+    var userObject = user.toObject() // user.toObject takes moongoose varible user
+    //pick 2 (without tokens) and return properties - id & email
+    //to access token array use example 'tokens[0].access'
     return _.pick(userObject,['_id','email'])
-
-
 }
 
+//Create generateAuthToken method adds token on individual user docu, save it and return back to the user
 UserSchema.methods.generateAuthToken = function(){
-    var user = this
+    var user = this //manipulating user
     var access = 'auth'
     var token = jwt.sign({_id:user._id.toHexString(),access},'abc123').toString()
-
+    // push new objects -access & tokens
     user.tokens.push({access,token})
-    
+    // save the changes (chaining)
     return user.save().then(()=>{
         return token
     })
+}
 
+//create findByToken statics method, function get arugment token.
+UserSchema.statics.findByToken = function(token){
+    var User = this
+    //undefined variable because jwt.verify () will throw error if its not match or whateer
+    var decoded;
+
+    try{
+        decoded = jwt.verify(token,'abc123')
+    }catch(err){ // if error, this promise will return reject function 
+        //return new Promise((resolve,reject)=>{ reject()});
+        return Promise.reject() // alternative as above
+    }
+    // for success decode case
+    return User.findOne({
+        '_id': decoded._id,// it will get the _id property (not from tokens)
+        'tokens.token':token,
+        'tokens.access':'auth'
+    })
 }
 
 var User = mongoose.model('User',UserSchema)
