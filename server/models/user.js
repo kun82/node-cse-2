@@ -82,6 +82,27 @@ UserSchema.statics.findByToken = function(token){
     })
 }
 
+//create findByCredentials statics method, function get 2 arugment(email,password) for /users/login
+UserSchema.statics.findByCredentials = function (email,password){
+    var User = this
+    return User.findOne({email:email}).then((user)=>{ //return -find and match email 
+        if(!user){
+            return Promise.reject()
+        }// else user email exist
+        return new Promise((resolve,reject)=>{ 
+        // use bcrypyt.compare to compare 2 agruments password and user.password + 1 callback agrument
+        bcrypt.compare(password, user.password,(err,res)=>{
+            if (res){ // if compare resultis true
+                resolve(user)
+            }else{ // if false
+                reject()
+            }
+        })
+    })
+})
+}
+
+
 //before 'save' to DB
 UserSchema.pre('save', function(next){
     var user = this
@@ -95,10 +116,12 @@ UserSchema.pre('save', function(next){
         })
     }else { // if password NOT modified
         next()
-    }
-
-    
+    }   
 })
+
+
+
+
 
 var User = mongoose.model('User',UserSchema)
 

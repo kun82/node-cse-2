@@ -134,6 +134,22 @@ app.get('/users/me',authenticate,(req,res)=>{
     res.send(req.user)
 })
 
+//POST /users/login {email, password}
+app.post ('/users/login',(req,res)=>{
+    var body =_.pick(req.body,['email','password']) //2 properties
+
+    //verify user email exist
+    User.findByCredentials(body.email, body.password).then((user)=>{
+        //return the called generateAuthToken for new (token)
+        return user.generateAuthToken().then((token)=>{
+            res.header('x-auth',token).send(user)
+        })
+    }).catch((err)=>{
+        res.status(400).send() // if user not exist
+    })
+    
+})
+
 
 app.listen (port,()=>{
     console.log (`Connect on port: ${port}`)
