@@ -150,6 +150,17 @@ app.post ('/users/login',(req,res)=>{
     
 })
 
+// LOGGING OUT DELETE users me token
+// refer to authenticate.js which store req.user & req.token
+app.delete('/users/me/token',authenticate,(req,res)=>{ 
+    //refer to removetoken method in user.js
+    req.user.removeToken(req.token).then(()=>{
+        res.status(200).send()
+    },()=>{// if error send status 400
+        res.status(400).send() 
+    })
+})
+
 
 app.listen (port,()=>{
     console.log (`Connect on port: ${port}`)

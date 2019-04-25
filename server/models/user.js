@@ -62,6 +62,19 @@ UserSchema.methods.generateAuthToken = function(){
     })
 }
 
+//create removeToken method, function to remove token for logging out 
+// need to pass in token arugment
+UserSchema.methods.removeToken = function (token){
+    var user = this
+    return user.update({  
+        $pull:{//$pull allow to remove item from any array with certain condition 
+            tokens:{
+                token:token //property : agrument input
+            }
+        } 
+    })
+}
+
 //create findByToken statics method, function get arugment token.
 UserSchema.statics.findByToken = function(token){
     var User = this
@@ -101,7 +114,6 @@ UserSchema.statics.findByCredentials = function (email,password){
     })
 })
 }
-
 
 //before 'save' to DB
 UserSchema.pre('save', function(next){
