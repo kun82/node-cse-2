@@ -223,7 +223,7 @@ describe ('POST /users',()=>{
                 expect(user).toBeTruthy() //ensure email is valid
                 expect(user.password).not.toBe(password) // ensure password is hashed
                 done();
-            })
+            }).catch((err)=> done(err))
         })
     })
     it('should return validation error if request invalid',(done)=>{//did not meet the requirement
@@ -247,5 +247,54 @@ describe ('POST /users',()=>{
         })
         .expect (400)  // invalid
         .end(done)
+    })
+})
+
+describe('POST /users/login',()=>{
+    it('should login user and return auth token',(done)=>{
+        request(app)
+        .post('/users/login')
+        .send({//grab the 2nd user email and password then pass in
+            email:users[1].email, 
+            password:users[1].password
+        })
+        .expect(200)//valid user email & password
+        .expect ((res)=>{//x-auth exist
+            expect(res.headers['x-auth']).toBeTruthy() 
+        })
+        .end((err,res)=>{
+            if(err){
+                return done(err)
+            }// if no error
+            User.findById(users[1]._id).then((user)=>{
+                expect(user.tokens[0]).toMatchObject({//match user.js model
+                    access:'auth',
+                    token:res.headers['x-auth']
+                }) 
+            done()
+            }).catch((err)=> done(err))
+        })
+    })
+    it('should reject invalid login',(done)=>{//invalid password
+        request(app)
+        .post('/users/login')
+        .send({//grab the 2nd user email with invalid password then pass in
+            email:users[1].email, 
+            password:users[1].password+'invalid' //pass in an invalid password
+        })
+        .expect(400)//invalid password
+        .expect ((res)=>{//x-auth should NOT exist
+            expect(res.headers['x-auth']).toBeFalsy()
+        })
+        .end((err,res)=>{
+            if(err){
+                return done(err)
+            }// if no error
+            User.findById(users[1]._id).then((user)=>{
+                //expect the tokens array length to be
+                expect(user.tokens.length).toBe(0) 
+                done()
+            }).catch((err)=> done(err))
+         })
     })
 })
