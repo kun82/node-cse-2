@@ -1,26 +1,16 @@
 const request = require ('supertest')
 const expect = require('expect')
+const {User}= require ('./../models/user')
+
 const {ObjectID} = require('mongodb')
 const {app} = require('./../server')
 const {Todo} =require ('./../models/todo')
 
-//setup todos array object 
-const todos = [{
-    _id: new ObjectID(),
-    text:'First test todo'
-},{
-    _id: new ObjectID(),
-    text:'Second test todo',
-    completed: true,
-    completedAt: 333
+const {todos,populateTodos,users,populateUsers} = require ('./seed/seed')
 
-}]
+beforeEach(populateUsers) //from seed.js
+beforeEach(populateTodos) //from seed.js
 
-beforeEach((done)=>{
-    Todo.deleteMany({}).then(()=>{//empty Todos
-        Todo.insertMany(todos) //insert todos array object
-    }).then(()=>done())
-})
 
 //describe block name POST /todos
 describe('POST /todos',()=>{
@@ -58,7 +48,7 @@ describe('POST /todos',()=>{
                 return done(err)//stop function execution
             }
             Todo.find().then((todos)=>{
-                expect(todos.length).toBe(2) //should be no data
+                expect(todos.length).toBe(2) //should have 2 data
                 done()
             }).catch((err)=>done(err)) //catch error
         })
@@ -181,6 +171,81 @@ describe('PATCH /todos/:id',()=>{
                 expect(res.body.todo.completed).toBe(false)
                 expect(res.body.todo.completedAt).toBeFalsy()
             })
+        .end(done)
+    })
+})
+
+//TEST CASE for GET ROUTE test user with Auth and user withOut Auth
+describe('GET /users/me',()=>{
+    it('should return user if authenticated',(done)=>{
+        request(app)
+        .get('/users/me')
+        .set('x-auth', users[0].tokens[0].token) //set header and access 1st user .token property
+        .expect(200)
+        .expect((res)=>{
+            expect(res.body._id).toBe(users[0]._id.toHexString())//compare 1st id
+            expect(res.body.email).toBe(users[0].email)//compare 1st email
+        })
+        .end(done)
+    })
+    it('should return 401 if not authenticated',(done)=>{
+        request(app)
+        .get('/users/me')
+        .expect(401) //expect 401 due user withOut Auth
+        .expect((res)=>{
+            expect(res.body).toEqual({}) //expect res.body is an empty object {} due not auth
+        })
+        .end(done)
+    })
+})
+
+//TEST CASE for SIGN/POST ROUTE test user with Auth and user withOut Auth
+
+describe ('POST /users',()=>{
+    it('should create a user',(done) =>{// test for valid email and password refer to models/user.js
+        var email = "kunkun@test.com"
+        var password = "123abc!"
+        request(app)
+        .post('/users')//route for creating users
+        .send({email,password})//send in the two variables email and password
+        .expect (200)  // valid data
+        .expect((res)=>{// .toExist() change toBeTruthy(); ensure property existence, no actual value required
+            expect(res.headers['x-auth']).toBeTruthy() 
+            expect(res.body._id).toBeTruthy() 
+            expect(res.body.email).toBe(email)
+        })
+        .end((err)=>{
+            if(err){//test fail
+                return done(err) // if error, call done and return error
+            }
+            // else if no error
+            User.findOne({email}).then((user)=>{
+                expect(user).toBeTruthy() //ensure email is valid
+                expect(user.password).not.toBe(password) // ensure password is hashed
+                done();
+            })
+        })
+    })
+    it('should return validation error if request invalid',(done)=>{//did not meet the requirement
+        request(app)
+        .post('/users')//route for creating users
+        .send({//send in the two invalid variables email and password
+            email:"kun",
+            password:"123"
+        })
+        .expect (400)  // invalid
+        .end(done)
+
+    })
+    it('should not create user if email is in use',(done)=>{
+        // reject email that is registered already in DB
+        request(app)
+        .post('/users')//route for creating users
+        .send({//send in the two available variables email and password
+            email:"user[0].email",// user[0] already available in DB
+            password:"Password123"
+        })
+        .expect (400)  // invalid
         .end(done)
     })
 })

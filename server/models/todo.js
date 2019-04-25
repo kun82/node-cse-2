@@ -20,4 +20,4 @@ var Todo = mongoose.model('Todo',{
 })
 
 // exports out to allow other to use Todo function
-module.exports={Todo}
+module.exports={Todo:Todo}
