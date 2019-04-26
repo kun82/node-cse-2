@@ -53,7 +53,7 @@ UserSchema.methods.toJSON = function(){
 UserSchema.methods.generateAuthToken = function(){
     var user = this //manipulating user
     var access = 'auth'
-    var token = jwt.sign({_id:user._id.toHexString(),access},'abc123').toString()
+    var token = jwt.sign({_id:user._id.toHexString(),access},process.env.JWT_SECRET).toString()
     // push new objects -access & tokens
     user.tokens.push({access,token})
     // save the changes (chaining)
@@ -82,7 +82,7 @@ UserSchema.statics.findByToken = function(token){
     var decoded;
 
     try{
-        decoded = jwt.verify(token,'abc123')
+        decoded = jwt.verify(token,process.env.JWT_SECRET)
     }catch(err){ // if error, this promise will return reject function 
         //return new Promise((resolve,reject)=>{ reject()});
         return Promise.reject() // alternative as above
