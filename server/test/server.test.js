@@ -18,6 +18,8 @@ describe('POST /todos',()=>{
         var text = "test todo text"
         request(app) 
         .post('/todos') //set up post request
+        //adding .set due to POST /todos require authentication hence x-auth require
+        .set('x-auth', users[0].tokens[0].token) //set header and access very 1st user (token property)
         .send({text:text})  //supertest library do the conversion into JSON
         .expect(200)  // expect no error
         .expect((res)=>{
@@ -41,6 +43,7 @@ describe('POST /todos',()=>{
     it('should not create todo with invalid body data',(done)=>{
         request(app)
         .post('/todos')
+        .set('x-auth', users[0].tokens[0].token) //set header and access very 1st user (token property)
         .send({}) //pass in empty object
         .expect(400) // expect error
         .end((err,res)=>{
@@ -59,8 +62,9 @@ describe('GET /todos',()=>{
     it('should get all todos',(done)=>{
         request(app)
         .get('/todos')
+        .set('x-auth', users[0].tokens[0].token) //set header and access very 1st user (token property)
         .expect((res)=>{
-            expect(res.body.todos.length).toBe(2)
+            expect(res.body.todos.length).toBe(1) // 1 because we are expecting 1 user
         })
         .end(done)
     })
@@ -70,7 +74,8 @@ describe('GET /todos',()=>{
 describe("GET /todos/:id", ()=>{
     it('should return todo doc',(done)=>{
         request(app)
-        .get(`/todos/${todos[0]._id.toHexString()}`) //convert _id type to string
+        .get(`/todos/${todos[0]._id.toHexString()}`) //get 1st user convert _id type to string 
+        .set('x-auth', users[0].tokens[0].token) //set header and access very 1st user (token property)
         .expect(200)
         .expect((res)=>{
             expect (res.body.todo.text).toBe(todos[0].text) //expect respond = to db text
@@ -78,11 +83,19 @@ describe("GET /todos/:id", ()=>{
         .end(done)
     })
 
+    it('should NOT return todo doc CREATED by OTHER USER',(done)=>{
+        request(app)
+        .get(`/todos/${todos[1]._id.toHexString()}`) //convert 2nd user _id type to STRING
+        .set('x-auth', users[0].tokens[0].token) //set header and access very 1st user (token property)
+        .expect(404)
+        .end(done)
+    })
     it('should return 404 if todo not found',(done)=>{
         var hexID = new ObjectID().toHexString() //convert Object id type to string
 
         request(app)
         .get(`/todos/:${hexID}`) 
+        .set('x-auth', users[0].tokens[0].token) //set header and access very 1st user (token property)
         .expect(404)
         .end(done)
     })
@@ -90,6 +103,7 @@ describe("GET /todos/:id", ()=>{
     it('should return 404 for non-object ids',(done)=>{
         request(app)
         .get(`/todos/123abc`)
+        .set('x-auth', users[0].tokens[0].token) //set header and access very 1st user (token property)
         .expect(404)
         .end(done)
 
@@ -98,10 +112,12 @@ describe("GET /todos/:id", ()=>{
 
 //testing delete
 describe ('DELETE /todos:ids',()=>{
-     it('should remove a todo by ID',(done)=>{     
-         var hexID = todos[1]._id.toHexString()
+     it('should remove a todo',(done)=>{     
+         var hexID = todos[1]._id.toHexString() //set as 2nd user
+
          request(app)
-         .delete(`/todos/${hexID}`) //delete http request
+         .delete(`/todos/${hexID}`) //delete http request 2nd user
+         .set('x-auth', users[1].tokens[0].token) //set header and access very 2nd user (token property)
          .expect(200)
          .expect((res)=>{
              expect(res.body.todo._id).toBe(hexID)
@@ -118,10 +134,30 @@ describe ('DELETE /todos:ids',()=>{
         })
      })
 
+     //2nd test
+     it('should remove a todo by ID',(done)=>{     
+        var hexID = todos[0]._id.toHexString()// delete the 1st user todo
+        request(app)
+        .delete(`/todos/${hexID}`) //delete http request
+        .set('x-auth', users[1].tokens[0].token) //set header and access very 2nd user (token property)
+        .expect(404) // 1st user no auth
+        .end((err,res)=>{
+            if(err){
+                return done(err)
+            }
+       //query database findbyID  & expect(null).toExist()
+       Todo.findById(hexID).then((todo)=>{
+           expect(todo).toBeTruthy() // delete should NOT happen(toExist)
+           done();
+       }).catch((err)=>done(err))
+       })
+    })
+
      it('should return 404 if todo not found',(done)=>{    
         var hexID = new ObjectID().toHexString() //convert Object id type to string
         request(app)
-        .get(`/todos/${hexID}`) 
+        .delete(`/todos/${hexID}`) 
+        .set('x-auth', users[1].tokens[0].token) //set header and access very 2nd user (token property)
         .expect(404)
         .end(done)
 
@@ -129,7 +165,8 @@ describe ('DELETE /todos:ids',()=>{
 
      it('should return 404 if object ID Not Valid',(done)=>{    
         request(app)
-        .get(`/todos/123abc`)
+        .delete('/todos/123abc')
+        .set('x-auth', users[1].tokens[0].token) //set header and access 2nd user (token property)
         .expect(404)
         .end(done)
     }) 
@@ -137,10 +174,12 @@ describe ('DELETE /todos:ids',()=>{
 
 describe('PATCH /todos/:id',()=>{
     it('should update the todo',(done)=>{
-        var hexID = todos[0]._id.toHexString()//grab id of first item
-        var text = "updated via test"
+        var hexID = todos[0]._id.toHexString()//grab the 1st user id
+
+        var text = "updated via server.test.js,hence new text"
         request(app)
         .patch(`/todos/${hexID}`) 
+        .set('x-auth', users[0].tokens[0].token) //set header and access 1st user (token property)
         .send({
             completed : true,
             text: text
@@ -155,11 +194,29 @@ describe('PATCH /todos/:id',()=>{
         .end(done)
 
     })
+    // update 1st todo as second user. expect 404 respond
+    it('should NOT update the todo',(done)=>{
+        var hexID = todos[0]._id.toHexString()//grab the 1st user id
+        var text = "updated via server.test.js,hence new text"
+        
+        request(app)
+        .patch(`/todos/${hexID}`) 
+        .set('x-auth', users[1].tokens[0].token) //set header and access 2nd user (token property)
+        .send({
+            completed : true,
+            text: text
+            })
+        .expect(404)  // expect no error
+        .end(done)
+    })
+
+
     it('should clear completedAt when todo is not completed (false)',(done)=>{
         var hexID = todos[1]._id.toHexString()//grab id of 2nd item
         var text = "updated via test for second item"
         request(app)
         .patch(`/todos/${hexID}`) 
+        .set('x-auth', users[1].tokens[0].token) //set header and access 2nd user (token property)
         .send({//update text and set completed to true
             completed : false,
             text: text
@@ -267,7 +324,7 @@ describe('POST /users/login',()=>{
                 return done(err)
             }// if no error
             User.findById(users[1]._id).then((user)=>{
-                expect(user.tokens[0]).toMatchObject({//match user.js model
+                expect(user.tokens[1]).toMatchObject({//match user.js model
                     access:'auth',
                     token:res.headers['x-auth']
                 }) 
@@ -291,8 +348,8 @@ describe('POST /users/login',()=>{
                 return done(err)
             }// if no error
             User.findById(users[1]._id).then((user)=>{
-                //expect the tokens array length to be
-                expect(user.tokens.length).toBe(0) 
+                //expect the tokens array length to be 1 because 2nd user pass.
+                expect(user.tokens.length).toBe(1) 
                 done()
             }).catch((err)=> done(err))
          })
@@ -310,7 +367,7 @@ describe('DELETE /users/me/token',()=>{
                 return done(err)
             } //else find & access 1st users id 
             User.findById(users[0]._id).then((user)=>{
-                expect(user.tokens.length).toBe(0) 
+                expect(user.tokens.length).toBe(0) //ensure token is removed
                 done()
             }).catch((err)=> done(err))
         })

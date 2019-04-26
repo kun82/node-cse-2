@@ -16,6 +16,11 @@ var Todo = mongoose.model('Todo',{
     completedAt:{
         type:Number,
         default:null
+    },
+//MAKING TODOS Route Private
+    _creator:{
+        type: mongoose.Schema.Types.ObjectId, //Access user id
+        required:true
     }
 })
 
